@@ -58,6 +58,7 @@ def main():
     args = init_args()
 
     # prepare dataset
+    print(f"Prepare dataset from {args.data}...")
     tokenizer = CharTokenizer()
     ds = CharDS.load_data(args.data,
                           tokenizer,
@@ -65,12 +66,14 @@ def main():
     dataloader = DataLoader(ds, batch_size=args.batch, shuffle=True)
 
     # prepare model
+    print("Prepareing model...")
     model = MiniCharGPTLM(seqlen=args.seq_len, h_dim=args.d_model, ff_dim=args.ff_dim,
                           n_head=args.n_head, n_block=args.n_block,
                           n_token=len(tokenizer.char2id))
     device = torch.device(f"cuda:{args.gpu}") if (torch.cuda.is_available() and args.gpu != -1) else torch.device("cpu")
 
     # train
+    print("Start training...")
     model = train(model, device, dataloader, args.epoch, args.lr)
 
     print("Done training, saving model...")
