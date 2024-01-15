@@ -1,5 +1,5 @@
-python train.py --data names.txt \
-                --seq_len 16 \
+python train.py --data ./dataset/names2.txt \
+                --seq_len 32 \
                 --d_model 512 \
                 --ff_dim 1024 \
                 --n_head 4 \
