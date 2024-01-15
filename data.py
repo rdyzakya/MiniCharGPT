@@ -1,11 +1,13 @@
 from torch.utils.data import Dataset
 from tokenizer import CharTokenizer
 import re
+import constant
 
 def remove_unk(text):
     return re.sub("[^a-z\s]", "", text)
 
 def expand(text):
+    text = text + constant.end_token
     return [(text[:i], text[i]) for i in range(1, len(text))]
 
 class CharDS(Dataset):
