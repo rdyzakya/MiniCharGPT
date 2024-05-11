@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from tokenizer import CharTokenizer
-from data import CharDS
+from data import CharDS, LanguageModelingDataCollator
 from model import MiniCharGPTLM
 
 def init_args():
@@ -29,7 +29,7 @@ def init_args():
 def train(model, device, dataloader, epoch, lr):
     model = model.to(device)
 
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=-100)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     bar = tqdm(total=epoch*len(dataloader), desc="Training")
@@ -37,13 +37,16 @@ def train(model, device, dataloader, epoch, lr):
     for e in range(epoch):
         model.train()
         train_loss = 0
-        for inputs, labels in dataloader:
+        for batch in dataloader:
+            labels = batch.pop("labels").to(device)
+            input_ids = batch.pop("input_ids").to(device)
+            attention_mask = batch.pop("attention_mask").to(device)
+
             optimizer.zero_grad()
-            inputs, labels = torch.vstack(inputs).T.to(device), labels.to(device)
 
-            out = model.forward(inputs)
+            out = model.forward(input_ids=input_ids, attention_mask=attention_mask)
 
-            loss = criterion(out, labels)
+            loss = criterion(out.view(-1, out.shape[-1]), labels.view(-1))
             train_loss += loss.item() * out.shape[0]
 
             loss.backward()
@@ -63,11 +66,13 @@ def main():
     ds = CharDS.load_data(args.data,
                           tokenizer,
                           dict(truncate=True, padding=True, max_length=args.seq_len))
-    dataloader = DataLoader(ds, batch_size=args.batch, shuffle=True)
+    
+    collator = LanguageModelingDataCollator(tokenizer=tokenizer)
+    dataloader = DataLoader(ds, batch_size=args.batch, shuffle=True, collate_fn=collator)
 
     # prepare model
-    print("Prepareing model...")
-    model = MiniCharGPTLM(seqlen=args.seq_len, h_dim=args.d_model, ff_dim=args.ff_dim,
+    print("Preparing model...")
+    model = MiniCharGPTLM(h_dim=args.d_model, ff_dim=args.ff_dim,
                           n_head=args.n_head, n_block=args.n_block,
                           n_token=len(tokenizer.char2id))
     device = torch.device(f"cuda:{args.gpu}") if (torch.cuda.is_available() and args.gpu != -1) else torch.device("cpu")
@@ -79,7 +84,6 @@ def main():
     print("Done training, saving model...")
 
     ckpt = {
-        "seqlen" : args.seq_len,
         "h_dim" : args.d_model,
         "ff_dim" : args.ff_dim,
         "n_head" : args.n_head,
