@@ -8,8 +8,9 @@ def remove_unk(text):
     return re.sub("[^a-z\s]", "", text).strip()
 
 def expand(text):
-    text = text + constant.end_token
-    return [(text[:i], text[i]) for i in range(1, len(text))]
+    res = [(list(text[:i]), text[i]) for i in range(1, len(text))]
+    res.append(list(text) + [constant.end_token])
+    return res
 
 class CharDS(Dataset):
     def __init__(self, data, tokenizer=None, tokenizer_kwargs={}):
