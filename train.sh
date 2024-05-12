@@ -5,7 +5,7 @@ python train.py --data ./dataset/names2.txt \
                 --n_head 4 \
                 --n_block 3 \
                 --gpu 0 \
-                --batch 16 \
+                --batch 8 \
                 --lr 3e-4 \
                 --epoch 10 \
-                --ckpt model.pth
+                --ckpt ./model/model-hispanic.pth

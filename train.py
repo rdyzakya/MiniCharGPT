@@ -30,7 +30,7 @@ def train(model, device, dataloader, epoch, lr):
     model = model.to(device)
 
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-100)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     bar = tqdm(total=epoch*len(dataloader), desc="Training")
 
@@ -82,6 +82,8 @@ def main():
     model = train(model, device, dataloader, args.epoch, args.lr)
 
     print("Done training, saving model...")
+
+    model = model.cpu()
 
     ckpt = {
         "h_dim" : args.d_model,
