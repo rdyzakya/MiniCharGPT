@@ -1,11 +1,12 @@
-python train.py --data ./dataset/names2.txt \
-                --seq_len 32 \
-                --d_model 512 \
-                --ff_dim 1024 \
+python train.py --train_data ./dataset/names2.txt \
+                --test_data ./dataset/names2.txt \
+                --seq_len 128 \
+                --d_model 256 \
+                --ff_dim 256 \
                 --n_head 4 \
-                --n_block 3 \
+                --n_block 1 \
                 --gpu 0 \
                 --batch 8 \
                 --lr 3e-4 \
-                --epoch 10 \
+                --epoch 2 \
                 --ckpt ./model/model-hispanic.pth
