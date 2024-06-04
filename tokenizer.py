@@ -17,7 +17,7 @@ class CharTokenizer:
         input_ids = torch.tensor(input_ids)
 
         attention_mask = torch.ones_like(input_ids)
-        attention_mask[:max_length - (len(text) + 1)] = 0
+        attention_mask[:max(0,max_length - (len(text) + 1))] = 0
 
         input_ids = input_ids[:max_length] if truncate else input_ids
         attention_mask = attention_mask[:max_length] if truncate else attention_mask
