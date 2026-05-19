@@ -76,10 +76,10 @@ class CharTokenizer:
         else:
             seq_len = max_len_tokenized
 
-        labels = torch.full((num_batch, seq_len), -100, dtype=torch.int32)
+        labels = torch.full((num_batch, seq_len), -100, dtype=torch.int64)
         for i in range(num_batch):
             seq_len = len(tokenized[i])
-            labels[i][:seq_len] = torch.tensor(tokenized[i], dtype=torch.int32)
+            labels[i][:seq_len] = torch.tensor(tokenized[i], dtype=torch.int64)
         
         attention_mask = (labels != -100).int()
 
