@@ -45,32 +45,37 @@ class MaskedAttention(torch.nn.Module):
     
     def forward(self, x, attention_mask):
         # x.shape = (num_batch, seq_len, num_dim)
-        q = self.wq(x) # shape:(num_batch, seq_len, h_dim)
+        q = self.wq(x)
         k = self.wk(x)
         v = self.wv(x)
-        
-        qk_d = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(self.dim_head).float()) # shape: (num_batch, seq_len, seq_len)
-        
-        # masked attention
-        a = torch.arange(qk_d.shape[-1]).expand(x.shape[0], qk_d.shape[-1], -1)
-        b = torch.arange(qk_d.shape[-1]).expand(x.shape[0], -1).unsqueeze(-1)
-        c = (a > b)
-        d = attention_mask.repeat(1,attention_mask.shape[-1]).bool()
-        d = d.view(-1, attention_mask.shape[-1], attention_mask.shape[-1])
-        e = d.transpose(-1,-2)
 
-        mask = torch.tensor(-torch.inf)
-        c = c.to(x.device)
-        d = d.to(x.device)
-        e = e.to(x.device)
+        qk_d = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(
+            torch.tensor(self.dim_head, device=x.device).float()
+        )
+
+        # masked attention
+        T = qk_d.shape[-1]
+
+        a = torch.arange(T, device=x.device).expand(x.shape[0], T, T)
+        b = torch.arange(T, device=x.device).expand(x.shape[0], T, T).transpose(1, 2)
+        c = (a > b)
+
+        d = attention_mask[:, None, :].bool().expand(x.shape[0], T, T)
+
+        e = d.transpose(-1, -2)
+
+        mask = torch.tensor(-torch.inf, device=x.device)
+
         condition = c.logical_or(
             d.logical_and(e).logical_not()
         )
 
         qk_d = qk_d.masked_fill(condition, mask)
+
         att_score = qk_d.softmax(-1)
         att_score = att_score.masked_fill(torch.isnan(att_score), 0.0)
-        out = torch.matmul(att_score, v) # shape: (num_batch, seq_len, num_dim)
+
+        out = torch.matmul(att_score, v)
         return out, att_score
 
 class MaskedMultiHeadAttention(torch.nn.Module):
