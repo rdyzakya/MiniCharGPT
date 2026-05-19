@@ -47,7 +47,7 @@ def train(model, device, train_dataloader, epoch, lr):
             for k, v in batch.items():
                 batch[k] = v.to(device)
 
-            out = model.forward(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"]) # shape: (num_batch, seq_len, n_vocab)
+            out, _ = model.forward(input_ids=batch["input_ids"], attention_mask=batch["attention_mask"]) # shape: (num_batch, seq_len, n_vocab)
 
             # Next Token Prediction
             logits = out[:, :-1, :]        # (B, T-1, V)
