@@ -124,7 +124,7 @@ class GPT(torch.nn.Module):
         x = input_ids
         if attention_mask is None:
             attention_mask = torch.ones_like(x)
-        x = self.embedding_matrix(x)
+        x = self.embedding(x)
         x = x + self.pe(x, attention_mask)
         for dec in self.decoders:
             x = dec(x, attention_mask)
