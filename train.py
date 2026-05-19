@@ -77,9 +77,8 @@ def main():
     args = init_args()
 
     # prepare dataset
-    print(f"Prepare dataset from {args.train_data} and {args.test_data}...")
+    print(f"Prepare dataset from {args.train_data}...")
     train_ds = CharDS(args.train_data)
-    test_ds = CharDS(args.test_data)
 
     # tokenize dataset
     tokenizer = CharTokenizer()
