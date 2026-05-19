@@ -51,7 +51,7 @@ def train(model, device, train_dataloader, epoch, lr):
 
             # Next Token Prediction
             logits = out[:, :-1, :]        # (B, T-1, V)
-            labels = batch["input_ids"][:, 1:]  # (B, T-1)
+            labels = batch["labels"][:, 1:]  # (B, T-1)
 
             loss = criterion(logits.view(-1, out.shape[-1]), labels.view(-1))
             train_loss += loss.item() * out.shape[0]

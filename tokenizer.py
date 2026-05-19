@@ -8,7 +8,6 @@ PAD_TOKEN = "<PAD>"
 class CharTokenizer:
     def __init__(self):
         self.char2id = {c : i for i, c in enumerate(ALL_CHAR)}
-        self.char2id[PAD_TOKEN] = len(self.char2id)
         self.id2char = {i : c for c, i in self.char2id.items()}
         self.n_vocab = len(self.char2id)
     
@@ -77,14 +76,18 @@ class CharTokenizer:
         else:
             seq_len = max_len_tokenized
 
-        input_ids = torch.full((num_batch, seq_len), -100, dtype=torch.int32)
+        labels = torch.full((num_batch, seq_len), -100, dtype=torch.int32)
         for i in range(num_batch):
             seq_len = len(tokenized[i])
-            input_ids[i][:seq_len] = torch.tensor(tokenized[i], dtype=torch.int32)
+            labels[i][:seq_len] = torch.tensor(tokenized[i], dtype=torch.int32)
         
-        attention_mask = (input_ids != -100).int()
+        attention_mask = (labels != -100).int()
+
+        input_ids = labels.clone()
+        input_ids[input_ids == -100] = 0 # place holder
 
         return {
             "input_ids" : input_ids,
-            "attention_mask" : attention_mask
+            "attention_mask" : attention_mask,
+            "labels" : labels
         }
