@@ -1,7 +1,7 @@
 python train.py --train_data ./dataset/names2.txt \
                 --max_length 64 \
-                --d_model 64 \
-                --ff_dim 256 \
+                --dim_model 64 \
+                --dim_ff 256 \
                 --n_head 4 \
                 --n_block 4 \
                 --batch 8 \
