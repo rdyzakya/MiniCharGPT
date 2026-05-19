@@ -63,6 +63,7 @@ class MaskedAttention(torch.nn.Module):
         condition = c.logical_or(
             d.logical_and(e).logical_not()
         )
+        condition.to(qk_d.device)
 
         qk_d = qk_d.masked_fill(condition, mask)
         att_score = qk_d.softmax(-1)
