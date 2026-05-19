@@ -53,7 +53,7 @@ def train(model, device, train_dataloader, epoch, lr):
             logits = out[:, :-1, :]        # (B, T-1, V)
             labels = batch["labels"][:, 1:]  # (B, T-1)
 
-            loss = criterion(logits.view(-1, out.shape[-1]), labels.view(-1))
+            loss = criterion(logits.reshape(-1, out.shape[-1]), labels.reshape(-1))
             train_loss += loss.item() * out.shape[0]
 
             loss.backward()
