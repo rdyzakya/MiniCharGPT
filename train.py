@@ -44,7 +44,7 @@ def train(model, device, train_dataloader, epoch, lr):
         for batch in train_dataloader:
             optimizer.zero_grad()
 
-            for k, v in batch:
+            for k, v in batch.items():
                 batch[k] = v.to(device)
 
             out = model.forward(**batch) # shape: (num_batch, seq_len, n_vocab)
