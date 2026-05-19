@@ -61,6 +61,7 @@ class MaskedAttention(torch.nn.Module):
 
         mask = torch.tensor(-torch.inf)
         c.to(qk_d.device)
+        d.to(qk_d.device)
         e.to(qk_d.device)
         condition = c.logical_or(
             d.logical_and(e).logical_not()
