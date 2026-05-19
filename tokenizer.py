@@ -1,47 +1,93 @@
-import constant
 import torch
+import torch.nn.functional as F
+from string import ascii_lowercase
+
+ALL_CHAR = ascii_lowercase + ' '
+PAD_TOKEN = "<PAD>"
 
 class CharTokenizer:
     def __init__(self):
-        self.pad_token = constant.pad_token
-        self.end_token = constant.end_token
-        self.char2id = {c : i for i, c in enumerate(constant.all_char)}
-        self.char2id[self.pad_token] = len(self.char2id)
-        self.char2id[self.end_token] = len(self.char2id)
+        self.char2id = {c : i for i, c in enumerate(ALL_CHAR)}
         self.id2char = {i : c for c, i in self.char2id.items()}
+        self.n_vocab = len(self.char2id)
     
-    def encode(self, text, truncate=False, padding=False, max_length=128):
+    def tokenize(self, text):
         input_ids = [self.char2id[c] for c in text]
-        input_ids = [self.char2id[self.pad_token] for i in range(max_length - (len(text) + 1))] + input_ids if padding else input_ids
-        input_ids.append(self.char2id[self.end_token])
+        return input_ids        
+
+    def encode(self, text):
+        input_ids = self.tokenize(text)
         input_ids = torch.tensor(input_ids)
 
         attention_mask = torch.ones_like(input_ids)
-        attention_mask[:max(0,max_length - (len(text) + 1))] = 0
-
-        input_ids = input_ids[:max_length] if truncate else input_ids
-        attention_mask = attention_mask[:max_length] if truncate else attention_mask
 
         return {
             "input_ids" : input_ids,
             "attention_mask" : attention_mask
         }
     
-    def batch_encode(self, texts, truncate=False, padding=False, max_length=128):
-        result = [self.encode(text, truncate=truncate, padding=padding, max_length=max_length) for text in texts]
-        result = {
+    def batch_encode(self, texts, truncate=False, padding='longest', max_length=None):
+        assert padding in ['longest', 'max_length'], "padding must be either 'longest' or 'max_length'"
+        result = [self.encode(text) for text in texts]
+        longest_length = max([len(el["input_ids"]) for el in result])
+        if max_length is None:
+            max_length = longest_length
+        if truncate:
+            result = [{
+                "input_ids" : el["input_ids"][:max_length],
+                "attention_mask" : el["attention_mask"][:max_length]
+            } for el in result]
+        max_length = max_length if padding == 'max_length' else longest_length
+        result = [{
+            "input_ids" : F.pad(el["input_ids"], (0, max_length - len(el["input_ids"])), value=self.char2id[PAD_TOKEN]),
+            "attention_mask" : F.pad(el["attention_mask"], (0, max_length - len(el["attention_mask"])), value=0)
+        } for el in result]
+        return {
             "input_ids" : torch.vstack([el["input_ids"] for el in result]),
             "attention_mask" : torch.vstack([el["attention_mask"] for el in result])
         }
-        return result
     
     def decode(self, input_ids, remove_special=False):
-        result = [self.id2char[i] for i in input_ids]
+        if isinstance(input_ids, torch.Tensor):
+            input_ids = input_ids.tolist()
+        text = "".join([self.id2char[i] for i in input_ids])
         if remove_special:
-            result = [el for el in result if el != self.pad_token and el != self.end_token]
-        return result
+            text = text.replace(PAD_TOKEN, "")
+        return text
+    
+    def batch_decode(self, batch_input_ids, remove_special=False):
+        if isinstance(batch_input_ids, torch.Tensor):
+            batch_input_ids = batch_input_ids.tolist()
+        return [self.decode(input_ids, remove_special=remove_special) for input_ids in batch_input_ids]
     
     def __call__(self, texts, **kwargs):
         if isinstance(texts, str):
             return self.encode(texts, **kwargs)
         return self.batch_encode(texts, **kwargs)
+    
+    def collate(self, tokenized, truncate=False, padding='longest', max_length=None):
+        num_batch = len(tokenized)
+        max_len_tokenized = max([len(seq) for seq in tokenized])
+        if truncate and max_length:
+            max_len_tokenized = min(max_length, max_len_tokenized)
+        
+        if padding == "max_length" and max_length:
+            seq_len = max_length
+        else:
+            seq_len = max_len_tokenized
+
+        labels = torch.full((num_batch, seq_len), -100, dtype=torch.int64)
+        for i in range(num_batch):
+            seq_len = len(tokenized[i])
+            labels[i][:seq_len] = torch.tensor(tokenized[i], dtype=torch.int64)
+        
+        attention_mask = (labels != -100).int()
+
+        input_ids = labels.clone()
+        input_ids[input_ids == -100] = 0 # place holder
+
+        return {
+            "input_ids" : input_ids,
+            "attention_mask" : attention_mask,
+            "labels" : labels
+        }
