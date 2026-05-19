@@ -60,9 +60,9 @@ class MaskedAttention(torch.nn.Module):
         e = d.transpose(-1,-2)
 
         mask = torch.tensor(-torch.inf)
-        c.to(qk_d.device)
-        d.to(qk_d.device)
-        e.to(qk_d.device)
+        c = c.to(x.device)
+        d = d.to(x.device)
+        e = e.to(x.device)
         condition = c.logical_or(
             d.logical_and(e).logical_not()
         )
