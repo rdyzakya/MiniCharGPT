@@ -36,12 +36,12 @@ class PositionalEncoding(torch.nn.Module):
         return out # shape: (num_batch, seq_len, num_dim)
 
 class MaskedAttention(torch.nn.Module):
-    def __init__(self, dim_head=64):
+    def __init__(self, dim_model=512, dim_head=64):
         super(MaskedAttention, self).__init__()
-        self.wq = torch.nn.Linear(in_features=dim_head, out_features=dim_head, bias=False)
-        self.wk = torch.nn.Linear(in_features=dim_head, out_features=dim_head, bias=False)
-        self.wv = torch.nn.Linear(in_features=dim_head, out_features=dim_head, bias=False)
-        self.h_dim = dim_head
+        self.wq = torch.nn.Linear(in_features=dim_model, out_features=dim_head, bias=False)
+        self.wk = torch.nn.Linear(in_features=dim_model, out_features=dim_head, bias=False)
+        self.wv = torch.nn.Linear(in_features=dim_model, out_features=dim_head, bias=False)
+        self.dim_head = dim_head
     
     def forward(self, x, attention_mask):
         # x.shape = (num_batch, seq_len, num_dim)
@@ -49,7 +49,7 @@ class MaskedAttention(torch.nn.Module):
         k = self.wk(x)
         v = self.wv(x)
         
-        qk_d = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(self.h_dim).float()) # shape: (num_batch, seq_len, seq_len)
+        qk_d = torch.matmul(q, k.transpose(-2, -1)) / torch.sqrt(torch.tensor(self.dim_head).float()) # shape: (num_batch, seq_len, seq_len)
         
         # masked attention
         a = torch.arange(qk_d.shape[-1]).expand(x.shape[0], qk_d.shape[-1], -1)
@@ -74,7 +74,7 @@ class MaskedMultiHeadAttention(torch.nn.Module):
     def __init__(self, dim_model=512, n_head=8):
         super(MaskedMultiHeadAttention, self).__init__()
         dim_head = dim_model//n_head
-        self.att = torch.nn.ModuleList([MaskedAttention(dim_head=dim_head) for _ in range(n_head)])
+        self.att = torch.nn.ModuleList([MaskedAttention(dim_model=dim_model, dim_head=dim_head) for _ in range(n_head)])
         self.wo = torch.nn.Linear(in_features=n_head * dim_head, out_features=dim_model, bias=False)
     
     def forward(self, x, attention_mask):
