@@ -52,7 +52,7 @@ class CharTokenizer:
             input_ids = input_ids.tolist()
         text = "".join([self.id2char[i] for i in input_ids])
         if remove_special:
-            text = text.replace(PAD_TOKEN, "").replace(END_TOKEN, "")
+            text = text.replace(PAD_TOKEN, "")
         return text
     
     def batch_decode(self, batch_input_ids, remove_special=False):
