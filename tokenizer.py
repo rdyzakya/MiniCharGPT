@@ -4,15 +4,17 @@ from string import ascii_lowercase
 
 ALL_CHAR = ascii_lowercase + ' '
 PAD_TOKEN = "<PAD>"
+END_TOKEN = "<END>"
 
 class CharTokenizer:
     def __init__(self):
         self.char2id = {c : i for i, c in enumerate(ALL_CHAR)}
+        self.char2id[END_TOKEN] = len(self.char2id)
         self.id2char = {i : c for c, i in self.char2id.items()}
         self.n_vocab = len(self.char2id)
     
     def tokenize(self, text):
-        input_ids = [self.char2id[c] for c in text]
+        input_ids = [self.char2id[c] for c in text] + [self.char2id[END_TOKEN]]
         return input_ids        
 
     def encode(self, text):
@@ -52,7 +54,7 @@ class CharTokenizer:
             input_ids = input_ids.tolist()
         text = "".join([self.id2char[i] for i in input_ids])
         if remove_special:
-            text = text.replace(PAD_TOKEN, "")
+            text = text.replace(PAD_TOKEN, "").replace(END_TOKEN, "")
         return text
     
     def batch_decode(self, batch_input_ids, remove_special=False):
